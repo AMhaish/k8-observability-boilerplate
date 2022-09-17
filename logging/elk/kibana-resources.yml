@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: Service # Kibana service so the enduser can reach its dashboard, its defined as LoadBalancer so it will be exposed to outside of the cluster
+metadata:
+  name: kibana
+  namespace: logging
+  labels:
+    app: kibana
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 5601
+  selector:
+    app: kibana
+---
+apiVersion: apps/v1
+kind: Deployment # While Kibana is stateless, it should be defined as normal deployment
+metadata:
+  name: kibana
+  namespace: logging
+  labels:
+    app: kibana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kibana
+  template:
+    metadata:
+      labels:
+        app: kibana
+    spec:
+      containers:
+        - name: kibana
+          image: docker.elastic.co/kibana/kibana:7.4.0 # The official Kibana image
+          resources: # The resources deticated for Kibana container, not too important to worry about memory consumptions while Kibana does nott use a lot
+            limits:
+              cpu: 1000m
+            requests:
+              cpu: 100m
+          env:
+            - name: ELASTICSEARCH_HOSTS
+              value: http://elasticsearch:9200/ # The path to Elasticsearch database inside logging cluster
+            - name: ELASTICSEARCH_USERNAME
+              value: kibana
+            - name: ELASTICSEARCH_PASSWORD
+              value: password
+          ports:
+            - containerPort: 5601

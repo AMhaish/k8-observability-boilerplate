@@ -1,0 +1,25 @@
+filebeat.inputs:
+- type: container
+  stream: stdout
+  tags: ["container"]
+  paths:
+    - /var/log/containers/*.log
+  # parse multiline logs such as exceptions
+  # multiline.pattern: '^((\d{2}-[A-Z][a-z]{2}-\d{4})|(\d{4}-\d{2}-\d{2})|(\d{2}:\d{2}:\d{2}.\d{3}))'
+  multiline.pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}'
+  multiline.negate: true
+  multiline.match: after
+filebeat.config.modules:
+  # Glob pattern for configuration loading
+  path: ${path.config}/modules.d/*.yml
+  # Set to true to enable config reloading
+  reload.enabled: false
+setup.template.settings:
+  index.number_of_shards: 1
+output.logstash:
+  # The Logstash hosts
+  hosts: ["logstash-service:5044"]
+processors:
+  # add kubernetes fields such as kubernetes.container.name
+- add_kubernetes_metadata:
+    in_cluster: true
